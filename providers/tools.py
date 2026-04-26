@@ -1,4 +1,4 @@
-"""Tool schemas for MemProjectProvider — per-task Git repos with approval gates."""
+"""Tool schemas for MemTaskProvider — per-task Git repos with approval gates."""
 
 from __future__ import annotations
 

@@ -1,1 +1,1 @@
-"""Providers package for MemProjectProvider."""
+"""Providers package for MemTaskProvider."""

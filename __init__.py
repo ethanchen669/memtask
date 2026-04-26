@@ -1,4 +1,4 @@
-"""MemProjectProvider — per-task Git repos with human-in-the-loop approval gates.
+"""MemTaskProvider — per-task Git repos with human-in-the-loop approval gates.
 
 Storage layout (per confirmed design):
   ~/.hermes/projects/<task_id>/
@@ -29,7 +29,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-MEMPROJECT_PROVIDER = "memproject"
+MEMTASK_PROVIDER = "memtask"
 
 # Tool schemas exposed by this provider
 try:
@@ -46,9 +46,9 @@ try:
         TASK_GIT_LOG_SCHEMA,
     )
 except ModuleNotFoundError:
-    # User plugin context: _hermes_user_memory.memproject doesn't have a parent
-    # package in sys.modules, so use absolute import from the memproject package
-    from memproject.providers.tools import (
+    # User plugin context: _hermes_user_memory.memtask doesn't have a parent
+    # package in sys.modules, so use absolute import from the memtask package
+    from memtask.providers.tools import (
         TASK_CREATE_SCHEMA,
         TASK_STATUS_SCHEMA,
         TASK_PAUSE_SCHEMA,
@@ -75,7 +75,7 @@ ALL_TOOL_SCHEMAS = [
 ]
 
 
-class MemProjectProvider(MemoryProvider):
+class MemTaskProvider(MemoryProvider):
     """Long-running task management with per-task Git repos and approval gates."""
 
     def __init__(self):
@@ -90,7 +90,7 @@ class MemProjectProvider(MemoryProvider):
 
     @property
     def name(self) -> str:
-        return MEMPROJECT_PROVIDER
+        return MEMTASK_PROVIDER
 
     # ── Core lifecycle ─────────────────────────────────────────────────────────
 
@@ -113,7 +113,7 @@ class MemProjectProvider(MemoryProvider):
         # Restore any task that was active before this session
         self._restore_active_task()
         logger.debug(
-            "MemProjectProvider initialized, projects_root=%s, active_task=%s",
+            "MemTaskProvider initialized, projects_root=%s, active_task=%s",
             self._projects_root,
             self._active_task_id,
         )
@@ -350,7 +350,7 @@ class MemProjectProvider(MemoryProvider):
         pending_gates = state.get("pending_gates", [])
 
         lines = [
-            "# MemProject — Active Task",
+            "# MemTask — Active Task",
             f"Task: `{self._active_task_id}`  Status: **{status}**",
             f"Phase: {current_phase}  Step: {current_step}",
         ]
@@ -419,7 +419,7 @@ class MemProjectProvider(MemoryProvider):
 
     def shutdown(self) -> None:
         """Clean shutdown — save any pending state."""
-        logger.debug("MemProjectProvider shutting down")
+        logger.debug("MemTaskProvider shutting down")
 
     # ── Optional hooks ────────────────────────────────────────────────────────
 
@@ -470,7 +470,7 @@ class MemProjectProvider(MemoryProvider):
         pending_gates = state.get("pending_gates", [])
 
         lines = [
-            f"[MemProject] Active task `{self._active_task_id}` — status: {status}, "
+            f"[MemTask] Active task `{self._active_task_id}` — status: {status}, "
             f"phase: {current_phase}, step: {current_step}"
         ]
         if pending_gates:
@@ -524,5 +524,5 @@ class MemProjectProvider(MemoryProvider):
 # ---------------------------------------------------------------------------
 
 def register(ctx) -> None:
-    """Register MemProject as a memory provider plugin."""
-    ctx.register_memory_provider(MemProjectProvider())
+    """Register MemTask as a memory provider plugin."""
+    ctx.register_memory_provider(MemTaskProvider())

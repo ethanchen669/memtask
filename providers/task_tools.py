@@ -1,4 +1,4 @@
-"""Tool implementations for MemProjectProvider."""
+"""Tool implementations for MemTaskProvider."""
 
 from __future__ import annotations
 
@@ -9,13 +9,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from .. import MemProjectProvider
+from .. import MemTaskProvider
 
 
 # ── Task Lifecycle ────────────────────────────────────────────────────────────
 
 
-def handle_task_create(provider: MemProjectProvider, args: Dict[str, Any]) -> Dict[str, Any]:
+def handle_task_create(provider: MemTaskProvider, args: Dict[str, Any]) -> Dict[str, Any]:
     task_id = args["task_id"]
     name = args["name"]
     description = args.get("description", "")
@@ -73,7 +73,7 @@ def handle_task_create(provider: MemProjectProvider, args: Dict[str, Any]) -> Di
     }
 
 
-def handle_task_status(provider: MemProjectProvider, args: Dict[str, Any]) -> Dict[str, Any]:
+def handle_task_status(provider: MemTaskProvider, args: Dict[str, Any]) -> Dict[str, Any]:
     task_id = args.get("task_id") or provider._active_task_id
     verbose = args.get("verbose", False)
 
@@ -121,7 +121,7 @@ def handle_task_status(provider: MemProjectProvider, args: Dict[str, Any]) -> Di
     return result
 
 
-def handle_task_pause(provider: MemProjectProvider, args: Dict[str, Any]) -> Dict[str, Any]:
+def handle_task_pause(provider: MemTaskProvider, args: Dict[str, Any]) -> Dict[str, Any]:
     task_id = args.get("task_id") or provider._active_task_id
     reason = args.get("reason", "")
 
@@ -173,7 +173,7 @@ def handle_task_pause(provider: MemProjectProvider, args: Dict[str, Any]) -> Dic
     }
 
 
-def handle_task_resume(provider: MemProjectProvider, args: Dict[str, Any]) -> Dict[str, Any]:
+def handle_task_resume(provider: MemTaskProvider, args: Dict[str, Any]) -> Dict[str, Any]:
     task_id = args.get("task_id") or provider._active_task_id
 
     if not task_id:
@@ -228,7 +228,7 @@ def handle_task_resume(provider: MemProjectProvider, args: Dict[str, Any]) -> Di
     }
 
 
-def handle_task_advance(provider: MemProjectProvider, args: Dict[str, Any]) -> Dict[str, Any]:
+def handle_task_advance(provider: MemTaskProvider, args: Dict[str, Any]) -> Dict[str, Any]:
     task_id = args.get("task_id") or provider._active_task_id
     commit_message = args.get("commit_message", "")
     artifacts_summary = args.get("artifacts_summary", "")
@@ -318,7 +318,7 @@ def handle_task_advance(provider: MemProjectProvider, args: Dict[str, Any]) -> D
     }
 
 
-def handle_task_approve(provider: MemProjectProvider, args: Dict[str, Any]) -> Dict[str, Any]:
+def handle_task_approve(provider: MemTaskProvider, args: Dict[str, Any]) -> Dict[str, Any]:
     task_id = args.get("task_id") or provider._active_task_id
     gate_id = args.get("gate_id")
     decision = args.get("decision")
@@ -366,7 +366,7 @@ def handle_task_approve(provider: MemProjectProvider, args: Dict[str, Any]) -> D
 # ── Task Discovery ────────────────────────────────────────────────────────────
 
 
-def handle_task_list(provider: MemProjectProvider, args: Dict[str, Any]) -> Dict[str, Any]:
+def handle_task_list(provider: MemTaskProvider, args: Dict[str, Any]) -> Dict[str, Any]:
     status_filter = args.get("status_filter", "all")
     projects_root = provider._projects_root
 
@@ -400,7 +400,7 @@ def handle_task_list(provider: MemProjectProvider, args: Dict[str, Any]) -> Dict
 # ── Git Operations ────────────────────────────────────────────────────────────
 
 
-def handle_task_commit(provider: MemProjectProvider, args: Dict[str, Any]) -> Dict[str, Any]:
+def handle_task_commit(provider: MemTaskProvider, args: Dict[str, Any]) -> Dict[str, Any]:
     task_id = args.get("task_id") or provider._active_task_id
     message = args.get("message", "")
 
@@ -437,7 +437,7 @@ def handle_task_commit(provider: MemProjectProvider, args: Dict[str, Any]) -> Di
     }
 
 
-def handle_task_branch(provider: MemProjectProvider, args: Dict[str, Any]) -> Dict[str, Any]:
+def handle_task_branch(provider: MemTaskProvider, args: Dict[str, Any]) -> Dict[str, Any]:
     task_id = args.get("task_id") or provider._active_task_id
     branch_name = args.get("branch_name", "")
 
@@ -465,7 +465,7 @@ def handle_task_branch(provider: MemProjectProvider, args: Dict[str, Any]) -> Di
     }
 
 
-def handle_task_git_log(provider: MemProjectProvider, args: Dict[str, Any]) -> Dict[str, Any]:
+def handle_task_git_log(provider: MemTaskProvider, args: Dict[str, Any]) -> Dict[str, Any]:
     task_id = args.get("task_id") or provider._active_task_id
     max_count = args.get("max_count", 20)
 

@@ -1,6 +1,6 @@
-name: memproject
+name: memtask
 version: 1.0.0
-description: "MemProjectProvider — long-running task management with per-task Git repos, human-in-the-loop approval gates, and cross-session recovery."
+description: "MemTaskProvider — long-running task management with per-task Git repos, human-in-the-loop approval gates, and cross-session recovery."
 pip_dependencies: []
 hooks:
   - on_turn_start

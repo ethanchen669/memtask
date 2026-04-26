@@ -1,8 +1,8 @@
-# MemProject — Design Document
+# MemTask — Design Document
 
 ## Overview
 
-**MemProjectProvider** is a Hermes Agent MemoryProvider plugin that manages long-running, multi-phase tasks with human-in-the-loop approval gates and cross-session recovery. Each task gets its own Git repository, enabling full version control, branch-per-step workflows, and decentralized collaboration.
+**MemTaskProvider** is a Hermes Agent MemoryProvider plugin that manages long-running, multi-phase tasks with human-in-the-loop approval gates and cross-session recovery. Each task gets its own Git repository, enabling full version control, branch-per-step workflows, and decentralized collaboration.
 
 ---
 
@@ -10,7 +10,7 @@
 
 ### Provider Lifecycle (MemoryProvider ABC)
 
-MemProjectProvider implements all 8 core lifecycle methods + 5 optional hooks from `agent.memory_provider.MemoryProvider`:
+MemTaskProvider implements all 8 core lifecycle methods + 5 optional hooks from `agent.memory_provider.MemoryProvider`:
 
 ```
 initialize(session_id, hermes_home, platform, ...)
@@ -237,19 +237,19 @@ __pycache__/
 
 | Item | Value |
 |------|-------|
-| Plugin directory | `~/.hermes/hermes-agent/plugins/memory/memproject/` |
-| Plugin name | `memproject` |
-| Provider class | `MemProjectProvider` |
-| Provider name | `memproject` |
+| Plugin directory | `~/.hermes/hermes-agent/plugins/memory/memtask/` |
+| Plugin name | `memtask` |
+| Provider class | `MemTaskProvider` |
+| Provider name | `memtask` |
 | Task local root | `~/.hermes/projects/<task_id>/` |
-| Plugin Git remote | `git@github.com:charlenchen/memproject.git` |
+| Plugin Git remote | `git@github.com:charlenchen/memtask.git` |
 | Task Git remote | `git@github.com:charlenchen/<task_id>.git` |
 
 ---
 
 ## Context Injection Strategy
 
-MemProjectProvider uses a **two-layer injection** approach to balance context relevance and token efficiency.
+MemTaskProvider uses a **two-layer injection** approach to balance context relevance and token efficiency.
 
 ### Layer 1 — Session Handoff (Heavyweight, On Demand)
 
@@ -315,16 +315,16 @@ User: "I'm ready to approve gate-2"
 
 ## MemoryManager Integration
 
-MemProjectProvider follows the standard MemoryProvider integration pattern:
+MemTaskProvider follows the standard MemoryProvider integration pattern:
 
 1. **Registration:** Declared in `plugin.yaml` under `plugins/memory/<name>/`
-2. **Activation:** Set `memory.provider: memproject` in `~/.hermes/config.yaml`
+2. **Activation:** Set `memory.provider: memtask` in `~/.hermes/config.yaml`
 3. **Orchestration:** MemoryManager calls lifecycle methods in order; prefetch results concatenated into `<memory-context>` block; tool schemas merged and exposed to the model
 
 MemoryManager constraints:
 - BuiltinMemoryProvider is always first (never removable)
 - Max 1 external MemoryProvider active at a time
-- MemProjectProvider replaces any previous external provider
+- MemTaskProvider replaces any previous external provider
 
 ---
 
@@ -333,7 +333,7 @@ MemoryManager constraints:
 When context overflow triggers compression, the `on_pre_compress(messages)` hook extracts active task progress:
 
 ```
-[MemProject] Active task `sc-mrp-v1` — status: active, phase: phase-2, step: step-3-bom-engine
+[MemTask] Active task `sc-mrp-v1` — status: active, phase: phase-2, step: step-3-bom-engine
   Pending approval gates: gate-2-approve-algo
 ```
 
