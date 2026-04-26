@@ -180,6 +180,83 @@ Every turn:
 
 ---
 
+## Cross-Task Relationships (v1.1)
+
+### Relationship Model
+
+Tasks have three relationship tiers:
+
+| Relationship | Strength | memtask management |
+|-------------|----------|-------------------|
+| **Same task, same repo** | Strong | Fully managed (branch strategy, gates) |
+| **Cross-pollination** | Medium | Prefetch隐性感知 (方式一), then explicit references (方式二) |
+| **Weak/No relationship** | Weak | Not managed — user adds context manually |
+
+**Cross-pollination** targets: two tasks share the same research theme but follow different research paths with different directory structures. Artifacts from one may inspire the other, but git repos cannot be merged due to structural incompatibility.
+
+### Relationship Declaration
+
+```json
+{
+  "relationships": [
+    { "task_id": "sc-bom-research-v1", "relationship": "cross-pollination" }
+  ]
+}
+```
+
+### Artifact Summary
+
+```json
+{
+  "artifact_summaries": [
+    {
+      "path": "artifacts/bom-algorithm-sketch.md",
+      "summary": "BOM 展开算法草稿，递归实现思路，3 层深度限制",
+      "generated_at": "2026-04-26T10:00:00Z"
+    }
+  ]
+}
+```
+
+Summary generation: on-demand via LLM at prefetch time (方案 B), cached until next `task_advance`.
+
+### Prefetch Injection
+
+```
+## Related Task Context (Cross-Pollination)
+
+### sc-bom-research-v1
+[artifacts/bom-algorithm-sketch.md]
+BOM 展开算法草稿，递归实现思路，3 层深度限制
+→ Use `task_status(task_id="sc-bom-research-v1")` to see full context
+```
+
+Size controls: max 5 related tasks, max 3 artifacts per task, ~200 chars per summary.
+
+### From Implicit to Explicit (方式二)
+
+```json
+{
+  "relationships": [
+    {
+      "task_id": "sc-bom-research-v1",
+      "relationship": "cross-pollination",
+      "references": [
+        {
+          "artifact_path": "artifacts/bom-algorithm-sketch.md",
+          "at_commit": "a1b2c3d",
+          "note": "参考其递归展开思路"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Adds: commit-level pinning + optional reference review gate.
+
+---
+
 ## Task State Schema
 
 ```json
@@ -220,7 +297,17 @@ Every turn:
       "approved_at": "2026-04-24T14:00:00Z"
     }
   ],
-  "executions": ["exec-20260424-140000-abc123"]
+  "executions": ["exec-20260424-140000-abc123"],
+  "relationships": [
+    { "task_id": "sc-bom-research-v1", "relationship": "cross-pollination" }
+  ],
+  "artifact_summaries": [
+    {
+      "path": "artifacts/bom-algorithm-sketch.md",
+      "summary": "BOM 展开算法草稿，递归实现思路，3 层深度限制",
+      "generated_at": "2026-04-26T10:00:00Z"
+    }
+  ]
 }
 ```
 

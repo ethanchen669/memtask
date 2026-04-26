@@ -195,9 +195,116 @@ Every turn:
 ```
 
 ---
----
 
-## Task State Schema
+## Cross-Task Relationships (v1.1)
+
+### Relationship Model
+
+Tasks have three relationship tiers:
+
+| Relationship | Strength | memtask management |
+|-------------|----------|-------------------|
+| **Same task, same repo** | Strong | Fully managed (branch strategy, gates) |
+| **Cross-pollination** | Medium | Perfetch隐性感知 (方式一), then explicit references (方式二) |
+| **Weak/No relationship** | Weak | Not managed — user adds context manually |
+
+**Cross-pollination** is the target: two tasks share the same research theme but follow different research paths with different directory structures. Artifacts from one may inspire the other, but the git repos cannot be merged due to structural incompatibility.
+
+### Relationship Declaration
+
+In `task_state.json`, a task declares its cross-pollination relationships:
+
+```json
+{
+  "task_id": "sc-bom-research-v2",
+  "name": "BOM 算法研究 v2",
+  "relationships": [
+    {
+      "task_id": "sc-bom-research-v1",
+      "relationship": "cross-pollination"
+    },
+    {
+      "task_id": "sc-inventory-model-v1",
+      "relationship": "cross-pollination"
+    }
+  ],
+  ...
+}
+```
+
+### Artifact Summary
+
+Each task maintains an `artifact_summaries` list in `task_state.json` — lightweight descriptions of key artifacts for cross-task prefetch injection:
+
+```json
+{
+  "artifact_summaries": [
+    {
+      "path": "artifacts/bom-algorithm-sketch.md",
+      "summary": "BOM 展开算法草稿，递归实现思路，3 层深度限制",
+      "generated_at": "2026-04-26T10:00:00Z"
+    },
+    {
+      "path": "artifacts/depth-analysis.xlsx",
+      "summary": "BOM 深度分布分析表，样本数 125，置信区间 95%",
+      "generated_at": "2026-04-26T11:30:00Z"
+    }
+  ]
+}
+```
+
+**Summary generation:** On-demand via LLM at prefetch time (方案 B). Summaries are cached in `task_state.json` until the next `task_advance`.
+
+### Prefetch Injection
+
+For each `cross-pollination` relationship, `on_turn_start()` injects artifact summaries:
+
+```
+## Related Task Context (Cross-Pollination)
+
+### sc-bom-research-v1
+[artifacts/bom-algorithm-sketch.md]
+BOM 展开算法草稿，递归实现思路，3 层深度限制
+→ Use `task_status(task_id="sc-bom-research-v1")` to see full context
+
+### sc-inventory-model-v1
+[artifacts/inventory-schema.md]
+库存数据结构草稿，支持批次号和有效期管理
+→ Use `task_status(task_id="sc-inventory-model-v1")` to see full context
+```
+
+### Size Controls
+
+- Max N related tasks injected (N=5, beyond which truncate with "...and N more")
+- Max M artifact summaries per related task (M=3, beyond which truncate)
+- Each summary capped at ~200 characters
+
+### From Implicit to Explicit (方式二)
+
+Once a cross-pollination relationship matures, the user may want to formally reference specific artifact versions. This is the explicit references upgrade path:
+
+```json
+{
+  "task_id": "sc-bom-research-v2",
+  "relationships": [
+    {
+      "task_id": "sc-bom-research-v1",
+      "relationship": "cross-pollination",
+      "references": [
+        {
+          "artifact_path": "artifacts/bom-algorithm-sketch.md",
+          "at_commit": "a1b2c3d",
+          "note": "参考其递归展开思路"
+        }
+      ]
+    }
+  ]
+}
+```
+
+This adds: commit-level pinning (no phantom dependencies) + optional reference review gate.
+
+---
 
 ```json
 {
@@ -237,7 +344,20 @@ Every turn:
       "approved_at": "2026-04-24T14:00:00Z"
     }
   ],
-  "executions": ["exec-20260424-140000-abc123"]
+  "executions": ["exec-20260424-140000-abc123"],
+  "relationships": [
+    {
+      "task_id": "sc-bom-research-v1",
+      "relationship": "cross-pollination"
+    }
+  ],
+  "artifact_summaries": [
+    {
+      "path": "artifacts/bom-algorithm-sketch.md",
+      "summary": "BOM 展开算法草稿，递归实现思路，3 层深度限制",
+      "generated_at": "2026-04-26T10:00:00Z"
+    }
+  ]
 }
 ```
 
@@ -448,9 +568,12 @@ This is injected into the compression summary prompt so the compressor preserves
 | P1-2 | task.md generation | Optional Obsidian-compatible markdown |
 | P1-3 | task_resume recovery | Re-inject pending_tool_calls into agent loop |
 | P1-4 | Multi-task routing | Detect task switch in active conversation |
+| P1-5 | Cross-pollination prefetch | Inject related tasks' artifact summaries into prefetch (方式一) |
+| P1-6 | Artifact summary generation | LLM on-demand summary generation for cross-task context |
 | P2-1 | Sub-agent integration | Delegate sub-tasks to child agents |
 | P2-2 | LLM reasoning capture | Store agent reasoning traces as artifacts |
 | P2-3 | GitHub PR workflow | Create PR on step completion |
+| P2-4 | Explicit references | Commit-level artifact pinning + reference review gate (方式二) |
 
 ---
 
