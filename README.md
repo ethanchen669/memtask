@@ -180,7 +180,7 @@ Every turn:
 
 ---
 
-## Cross-Task Relationships (v1.1)
+## Cross-Task Relationships (→ v1.1.0)
 
 ### Relationship Model
 
