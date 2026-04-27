@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# SagTask — One-line installer for Hermes Agent
+# SagTask — One-line installer for Hermes Agent (user mode)
+#
+# Downloads the pre-built sagtask.tar.gz from GitHub releases and extracts
+# it to ~/.hermes/plugins/sagtask/. No git required.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/ethanchen669/sagtask/main/install.sh | bash
@@ -11,63 +14,84 @@
 
 set -euo pipefail
 
+OWNER="ethanchen669"
+REPO="sagtask"
 PLUGIN_DIR="${HOME}/.hermes/plugins/sagtask"
-REPO_URL="https://github.com/ethanchen669/sagtask.git"
-HERMES_PLUGINS="${HOME}/.hermes/plugins"
+TMPDIR=$(mktemp -d)
 
-echo "→ SagTask installer"
+cleanup() { rm -rf "$TMPDIR"; }
+trap cleanup EXIT
+
+echo "→ SagTask installer (user mode)"
 echo ""
 
-# ── Detect install mode ────────────────────────────────────────────────────
+# ── Detect existing installation ───────────────────────────────────────────
 
 if [[ -d "$PLUGIN_DIR" ]]; then
-    if [[ -d "${PLUGIN_DIR}/.git" ]]; then
-        echo "✓ ${PLUGIN_DIR} already exists (git clone)"
-        echo "  Pulling latest changes..."
-        cd "$PLUGIN_DIR"
-        git pull origin main
-        echo "✓ Updated to $(git log -1 --oneline)"
-    else
-        echo "✗ ${PLUGIN_DIR} exists but is not a git clone."
-        echo "  Remove it first: rm -rf ${PLUGIN_DIR}"
+    # If it has .git, it's either a developer gitfile or an old git clone — not our tarball install
+    if [[ -L "$PLUGIN_DIR/.git" ]] || [[ -d "$PLUGIN_DIR/.git" ]]; then
+        echo "✗ ${PLUGIN_DIR} appears to be a git installation (gitfile or clone)."
+        echo "  For updates, use:  cd ${PLUGIN_DIR} && git pull"
+        echo "  To switch to release mode: rm -rf ${PLUGIN_DIR} && $0"
         exit 1
     fi
-else
-    echo "→ Cloning SagTask into ${PLUGIN_DIR}..."
-    mkdir -p "$HERMES_PLUGINS"
-    git clone "$REPO_URL" "$PLUGIN_DIR"
-    echo "✓ Cloned $(git -C "$PLUGIN_DIR" log -1 --oneline)"
+    echo "⚠  ${PLUGIN_DIR} already exists. Overwriting with latest release..."
+    rm -rf "$PLUGIN_DIR"
 fi
 
-# ── Verify ────────────────────────────────────────────────────────────────
+# ── Fetch latest release ─────────────────────────────────────────────────────
+
+echo "→ Fetching latest SagTask release..."
+
+RELEASE_JSON=$(curl -fsSL "https://api.github.com/repos/${OWNER}/${REPO}/releases/latest")
+TARBALL_URL=$(echo "$RELEASE_JSON" | grep -o '"tarball_url": "[^"]*"' | cut -d'"' -f4)
+
+if [[ -z "$TARBALL_URL" ]]; then
+    echo "✗ Could not find latest release. Is there a release published?"
+    exit 1
+fi
+
+VERSION=$(echo "$RELEASE_JSON" | grep -o '"tag_name": "[^"]*"' | cut -d'"' -f4)
+echo "  Release: ${VERSION}"
+
+# ── Download & extract ───────────────────────────────────────────────────────
+
+echo "→ Downloading ${TARBALL_URL}..."
+cd "$TMPDIR"
+curl -fsSL "$TARBALL_URL" -o sagtask.tar.gz
+
+echo "→ Extracting to ${PLUGIN_DIR}..."
+mkdir -p "$(dirname "$PLUGIN_DIR")"
+# The tarball extracts to a temp dir with the repo name as root — find and move it
+tar -xzf sagtask.tar.gz
+TEMP_EXTRACT=$(find "$TMPDIR" -mindepth 1 -maxdepth 1 -type d)
+mv "$TEMP_EXTRACT/sagtask" "$PLUGIN_DIR"
+
+# ── Verify ───────────────────────────────────────────────────────────────────
 
 if [[ ! -f "${PLUGIN_DIR}/__init__.py" ]]; then
-    echo "✗ __init__.py not found — installation may be corrupt."
+    echo "✗ ${PLUGIN_DIR}/__init__.py not found — installation may be corrupt."
     exit 1
 fi
 
 if [[ ! -f "${PLUGIN_DIR}/plugin.yaml" ]]; then
-    echo "✗ plugin.yaml not found — this may not be a SagTask installation."
+    echo "✗ ${PLUGIN_DIR}/plugin.yaml not found — this may not be a SagTask release."
     exit 1
 fi
 
 echo "✓ Plugin files verified"
 
-# ── Check if gateway is running ──────────────────────────────────────────
+# ── Check gateway ───────────────────────────────────────────────────────────
 
 if pgrep -f "hermes.*gateway" > /dev/null 2>&1; then
     echo ""
-    echo "⚠  Hermes gateway is running."
-    echo "   Restart it to load the new plugin:"
+    echo "⚠  Hermes gateway is running. Restart it to load the plugin:"
     echo ""
     echo "   hermes gateway restart"
-    echo "   # or"
-    echo "   pkill -f hermes.*gateway && hermes gateway run"
 else
-    echo "✓ No gateway process detected (not running or not installed as a daemon)."
+    echo "✓ No gateway process detected."
 fi
 
 echo ""
-echo "✓ SagTask installed successfully!"
-echo ""
-echo "Next: Start/restart your Hermes gateway, then type 'task_list' to verify."
+echo "✓ SagTask ${VERSION} installed successfully!"
+echo "   Next: restart Hermes gateway, then type 'task_list' to verify."
