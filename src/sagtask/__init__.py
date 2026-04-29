@@ -350,7 +350,7 @@ class SagTaskPlugin:
         else:
             hermes_home = Path(hermes_home)
         self._hermes_home = hermes_home
-        self._projects_root = hermes_home / "sagtask"
+        self._projects_root = hermes_home / "sag_tasks"
         self._projects_root.mkdir(parents=True, exist_ok=True)
         self._restore_active_task()
         logger.debug(
@@ -1349,7 +1349,7 @@ def _on_pre_llm_call(
             p._hermes_home = Path(hermes_home)
         else:
             p._hermes_home = Path.home() / ".hermes"
-        p._projects_root = p._hermes_home / "sagtask"
+        p._projects_root = p._hermes_home / "sag_tasks"
         p._projects_root.mkdir(parents=True, exist_ok=True)
         p._restore_active_task()
 
@@ -1399,7 +1399,7 @@ def _on_session_start(
             p._hermes_home = Path(hermes_home)
         else:
             p._hermes_home = Path.home() / ".hermes"
-        p._projects_root = p._hermes_home / "sagtask"
+        p._projects_root = p._hermes_home / "sag_tasks"
         p._projects_root.mkdir(parents=True, exist_ok=True)
     p._restore_active_task()
     logger.debug(
