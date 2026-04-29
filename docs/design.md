@@ -14,10 +14,10 @@ SagTaskPlugin registers with Hermes Agent using `ctx.register_tool()` + `ctx.reg
 
 ```
 register(ctx)
-    ├── ctx.register_tool("task_create", ...)
-    ├── ctx.register_tool("task_status", ...)
+    ├── ctx.register_tool("sag_task_create", ...)
+    ├── ctx.register_tool("sag_sag_task_status", ...)
     │    ...
-    ├── ctx.register_tool("task_relate", ...)
+    ├── ctx.register_tool("sag_task_relate", ...)
     ├── ctx.register_hook("pre_llm_call",  _on_pre_llm_call)   ← task context injection
     └── ctx.register_hook("on_session_start", _on_session_start) ← restore active task
 ```
@@ -35,32 +35,32 @@ register(ctx)
 
 | Tool | Description |
 |------|-------------|
-| `task_create` | Create task with phased steps/gates, init Git repo + GitHub repo |
-| `task_status` | Show current phase/step/pending gates (verbose: full tree + git log) |
-| `task_pause` | Snapshot PausedExecutionContext to `executions/` |
-| `task_resume` | Restore from most recent paused execution |
-| `task_advance` | Move to next Step/Phase: write task_state, commit, create new branch |
-| `task_approve` | Submit approval decision for a pending gate |
+| `sag_task_create` | Create task with phased steps/gates, init Git repo + GitHub repo |
+| `sag_sag_task_status` | Show current phase/step/pending gates (verbose: full tree + git log) |
+| `sag_task_pause` | Snapshot PausedExecutionContext to `executions/` |
+| `sag_task_resume` | Restore from most recent paused execution |
+| `sag_sag_task_advance` | Move to next Step/Phase: write task_state, commit, create new branch |
+| `sag_sag_task_approve` | Submit approval decision for a pending gate |
 
 **Task Discovery:**
 
 | Tool | Description |
 |------|-------------|
-| `task_list` | List all tasks under `~/.hermes/sag_tasks/` with status |
+| `sag_task_list` | List all tasks under `~/.hermes/sag_tasks/` with status |
 
 **Git Operations:**
 
 | Tool | Description |
 |------|-------------|
-| `task_commit` | Stage all + commit with message |
-| `task_branch` | Create + push new branch |
-| `task_git_log` | Show recent commit history |
+| `sag_sag_task_commit` | Stage all + commit with message |
+| `sag_task_branch` | Create + push new branch |
+| `sag_task_git_log` | Show recent commit history |
 
 **Cross-Task:**
 
 | Tool | Description |
 |------|-------------|
-| `task_relate` | Declare cross-pollination relationship between two tasks |
+| `sag_task_relate` | Declare cross-pollination relationship between two tasks |
 
 ---
 
@@ -103,9 +103,9 @@ Three operations set the active task:
 
 | Operation | Effect |
 |-----------|--------|
-| `task_create` | New task is automatically marked active |
-| `task_resume` | The resumed task is marked active |
-| `task_advance` | Moves to next step; task stays active |
+| `sag_task_create` | New task is automatically marked active |
+| `sag_task_resume` | The resumed task is marked active |
+| `sag_sag_task_advance` | Moves to next step; task stays active |
 
 `on_session_start` hook calls `_restore_active_task()` on startup, which reads `.active_task` and restores the previously active task across sessions.
 
@@ -219,7 +219,7 @@ Each task maintains an `artifact_summaries` list in `task_state.json` — lightw
 }
 ```
 
-**Summary generation:** On-demand via LLM at prefetch time (方案 B). Summaries are cached in `task_state.json` until the next `task_advance`.
+**Summary generation:** On-demand via LLM at prefetch time (方案 B). Summaries are cached in `task_state.json` until the next `sag_sag_task_advance`.
 
 ### Prefetch Injection
 
@@ -231,12 +231,12 @@ For each `cross-pollination` relationship, `_on_pre_llm_call()` injects artifact
 ### sc-bom-research-v1
 [artifacts/bom-algorithm-sketch.md]
 BOM 展开算法草稿，递归实现思路，3 层深度限制
-→ Use `task_status(task_id="sc-bom-research-v1")` to see full context
+→ Use `sag_task_status(task_id="sc-bom-research-v1")` to see full context
 
 ### sc-inventory-model-v1
 [artifacts/inventory-schema.md]
 库存数据结构草稿，支持批次号和有效期管理
-→ Use `task_status(task_id="sc-inventory-model-v1")` to see full context
+→ Use `sag_task_status(task_id="sc-inventory-model-v1")` to see full context
 ```
 
 ### Size Controls
@@ -368,7 +368,7 @@ Git repo is initialized on first `git push`. The `ensure_git_repo()` method:
 
 ### GitHub Repo Auto-Creation
 
-On `task_create`:
+On `sag_task_create`:
 1. `gh repo create <task_id>` — creates public GitHub repo under `charlenchen/`
 2. `git push -u origin main` — pushes initial commit
 
@@ -478,13 +478,13 @@ User: "Continue where we left off"
   → LLM knows the project state without reading all history
 
 User: "Walk me through the current step details"
-  → task_status called → full step description + pending gates
+  → sag_task_status called → full step description + pending gates
 
 User: "What decisions have been made so far?"
-  → task_commit --summary called → all gate decisions
+  → sag_task_commit --summary called → all gate decisions
 
 User: "I'm ready to approve gate-2"
-  → task_approve called → decision recorded, step advances
+  → sag_task_approve called → decision recorded, step advances
 ```
 
 ---
@@ -505,7 +505,7 @@ SagTaskPlugin is **not** a memory provider. It does not require or use `memory.p
 |----------|------|-------------|
 | P1-1 | pending_tool_calls capture | Auto-capture pending tool calls at pause time |
 | P1-2 | task.md generation | Optional Obsidian-compatible markdown |
-| P1-3 | task_resume recovery | Re-inject pending_tool_calls into agent loop |
+| P1-3 | sag_task_resume recovery | Re-inject pending_tool_calls into agent loop |
 | P1-4 | Multi-task routing | Detect task switch in active conversation |
 | P1-5 | Cross-pollination prefetch | Inject related tasks' artifact summaries into prefetch (方式一) |
 | P1-6 | Artifact summary generation | LLM on-demand summary generation for cross-task context |

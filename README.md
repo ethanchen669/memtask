@@ -29,17 +29,17 @@ No `pip install`, no extra dependencies, no `config.yaml` changes needed.
 
 | Tool | Description |
 |------|-------------|
-| `task_create` | Create task with phased steps/gates, init Git + GitHub repo |
-| `task_status` | Show current phase/step/pending gates |
-| `task_pause` | Snapshot execution context for later resume |
-| `task_resume` | Restore from most recent paused execution |
-| `task_advance` | Move to next Step/Phase, commit, create new branch |
-| `task_approve` | Submit approval decision for a pending gate |
-| `task_list` | List all tasks under `~/.hermes/sag_tasks/` |
-| `task_commit` | Stage all + commit with message |
-| `task_branch` | Create + push new branch |
-| `task_git_log` | Show recent commit history |
-| `task_relate` | Link two tasks as cross-pollination partners |
+| `sag_task_create` | Create task with phased steps/gates, init Git + GitHub repo |
+| `sag_sag_task_status` | Show current phase/step/pending gates |
+| `sag_task_pause` | Snapshot execution context for later resume |
+| `sag_task_resume` | Restore from most recent paused execution |
+| `sag_sag_task_advance` | Move to next Step/Phase, commit, create new branch |
+| `sag_sag_task_approve` | Submit approval decision for a pending gate |
+| `sag_task_list` | List all tasks under `~/.hermes/sag_tasks/` |
+| `sag_sag_task_commit` | Stage all + commit with message |
+| `sag_task_branch` | Create + push new branch |
+| `sag_task_git_log` | Show recent commit history |
+| `sag_task_relate` | Link two tasks as cross-pollination partners |
 
 ---
 
@@ -51,10 +51,10 @@ SagTaskPlugin registers with Hermes Agent using `ctx.register_tool()` + `ctx.reg
 
 ```
 register(ctx)
-    ├── ctx.register_tool("task_create", ...)
-    ├── ctx.register_tool("task_status", ...)
+    ├── ctx.register_tool("sag_task_create", ...)
+    ├── ctx.register_tool("sag_sag_task_status", ...)
     │    ...
-    ├── ctx.register_tool("task_relate", ...)
+    ├── ctx.register_tool("sag_task_relate", ...)
     ├── ctx.register_hook("pre_llm_call",  _on_pre_llm_call)   ← task context injection
     └── ctx.register_hook("on_session_start", _on_session_start) ← restore active task
 ```
@@ -72,26 +72,26 @@ register(ctx)
 
 | Tool | Description |
 |------|-------------|
-| `task_create` | Create task with phased steps/gates, init Git repo + GitHub repo |
-| `task_status` | Show current phase/step/pending gates (verbose: full tree + git log) |
-| `task_pause` | Snapshot PausedExecutionContext to `executions/` |
-| `task_resume` | Restore from most recent paused execution |
-| `task_advance` | Move to next Step/Phase: write task_state, commit, create new branch |
-| `task_approve` | Submit approval decision for a pending gate |
+| `sag_task_create` | Create task with phased steps/gates, init Git repo + GitHub repo |
+| `sag_sag_task_status` | Show current phase/step/pending gates (verbose: full tree + git log) |
+| `sag_task_pause` | Snapshot PausedExecutionContext to `executions/` |
+| `sag_task_resume` | Restore from most recent paused execution |
+| `sag_sag_task_advance` | Move to next Step/Phase: write task_state, commit, create new branch |
+| `sag_sag_task_approve` | Submit approval decision for a pending gate |
 
 **Task Discovery:**
 
 | Tool | Description |
 |------|-------------|
-| `task_list` | List all tasks under `~/.hermes/sag_tasks/` with status |
+| `sag_task_list` | List all tasks under `~/.hermes/sag_tasks/` with status |
 
 **Git Operations:**
 
 | Tool | Description |
 |------|-------------|
-| `task_commit` | Stage all + commit with message |
-| `task_branch` | Create + push new branch |
-| `task_git_log` | Show recent commit history |
+| `sag_sag_task_commit` | Stage all + commit with message |
+| `sag_task_branch` | Create + push new branch |
+| `sag_task_git_log` | Show recent commit history |
 
 ---
 
@@ -134,9 +134,9 @@ Three operations set the active task:
 
 | Operation | Effect |
 |-----------|--------|
-| `task_create` | New task is automatically marked active |
-| `task_resume` | The resumed task is marked active |
-| `task_advance` | Moves to next step; task stays active |
+| `sag_task_create` | New task is automatically marked active |
+| `sag_task_resume` | The resumed task is marked active |
+| `sag_sag_task_advance` | Moves to next step; task stays active |
 
 `on_session_start` hook calls `_restore_active_task()` on startup, which reads `.active_task` and restores the previously active task across sessions.
 
@@ -199,7 +199,7 @@ Tasks have three relationship tiers:
 }
 ```
 
-Summary generation: on-demand via LLM at prefetch time (方案 B), cached until next `task_advance`.
+Summary generation: on-demand via LLM at prefetch time (方案 B), cached until next `sag_sag_task_advance`.
 
 ### Prefetch Injection
 
@@ -209,7 +209,7 @@ Summary generation: on-demand via LLM at prefetch time (方案 B), cached until 
 ### sc-bom-research-v1
 [artifacts/bom-algorithm-sketch.md]
 BOM 展开算法草稿，递归实现思路，3 层深度限制
-→ Use `task_status(task_id="sc-bom-research-v1")` to see full context
+→ Use `sag_task_status(task_id="sc-bom-research-v1")` to see full context
 ```
 
 Size controls: max 2 related tasks, max 3 artifacts per task, ~200 chars per summary.
@@ -333,7 +333,7 @@ Git repo is initialized on first `git push`. The `ensure_git_repo()` method:
 
 ### GitHub Repo Auto-Creation
 
-On `task_create`:
+On `sag_task_create`:
 1. `gh repo create <task_id>` — creates public GitHub repo under `<username>/`
 2. `git push -u origin main` — pushes initial commit
 
@@ -428,11 +428,11 @@ During conversation, the user or LLM explicitly calls tools to get deeper inform
 
 | Tool | Returns |
 |------|---------|
-| `task_status` | Full phase/step tree, pending gates, step description |
-| `task_git_log` | Recent commits, branch history |
-| `task_branch` | Current branch, uncommitted changes |
-| `task_commit --summary` | All decisions recorded so far |
-| `task_approve` | Details of a specific pending gate |
+| `sag_sag_task_status` | Full phase/step tree, pending gates, step description |
+| `sag_task_git_log` | Recent commits, branch history |
+| `sag_task_branch` | Current branch, uncommitted changes |
+| `sag_task_commit --summary` | All decisions recorded so far |
+| `sag_sag_task_approve` | Details of a specific pending gate |
 
 ### Why Not Full Injection?
 
@@ -454,13 +454,13 @@ User: "Continue where we left off"
   → LLM knows the project state without reading all history
 
 User: "Walk me through the current step details"
-  → task_status called → full step description + pending gates
+  → sag_task_status called → full step description + pending gates
 
 User: "What decisions have been made so far?"
-  → task_commit --summary called → all gate decisions
+  → sag_task_commit --summary called → all gate decisions
 
 User: "I'm ready to approve gate-2"
-  → task_approve called → decision recorded, step advances
+  → sag_task_approve called → decision recorded, step advances
 ```
 
 ---
